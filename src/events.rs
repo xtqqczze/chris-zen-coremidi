@@ -435,15 +435,14 @@ mod tests {
     use crate::protocol::Protocol;
     use crate::{EventBuffer, EventList};
     use coremidi_sys::{
-        kMIDIProtocol_2_0, ByteCount, MIDIEventList, MIDIEventListAdd, MIDIEventListInit,
-        MIDIProtocolID,
+        kMIDIProtocol_2_0, ByteCount, MIDIEventListAdd, MIDIEventListInit, MIDIProtocolID,
     };
 
     #[test]
     fn event_list_accessors() {
         const BUFFER_SIZE: usize = 256;
-        let buffer = [0u8; BUFFER_SIZE];
-        let event_list_ptr = buffer.as_ptr() as *const MIDIEventList as *mut MIDIEventList;
+        let mut buffer = [0u8; BUFFER_SIZE];
+        let event_list_ptr = buffer.as_mut_ptr().cast();
         let event_packet_ptr =
             unsafe { MIDIEventListInit(event_list_ptr, kMIDIProtocol_2_0 as MIDIProtocolID) };
         let event_packet_ptr = unsafe {
@@ -466,7 +465,7 @@ mod tests {
                 [3, 4, 5].as_ptr(),
             )
         };
-        let event_list = unsafe { &*(event_list_ptr as *const EventList) };
+        let event_list = unsafe { &*(event_list_ptr.cast::<EventList>()) };
 
         assert_eq!(event_list.protocol(), Protocol::Midi20);
         assert!(!event_list.is_empty());

@@ -18,8 +18,8 @@ pub struct PacketList(MIDIPacketList);
 impl PacketList {
     /// For internal usage only.
     /// Requires this instance to actually point to a valid MIDIPacketList
-    pub(crate) unsafe fn as_ptr(&self) -> *mut MIDIPacketList {
-        self as *const PacketList as *mut PacketList as *mut MIDIPacketList
+    pub(crate) unsafe fn as_ptr(&self) -> *const MIDIPacketList {
+        (self as *const Self).cast()
     }
 }
 
@@ -410,7 +410,7 @@ mod tests {
         let packet_buf = PacketBuffer::new(42, &[0x90u8, 0x40, 0x7f]);
         let packet_list: &PacketList = &packet_buf;
         assert_eq!(
-            unsafe { packet_list.as_ptr() as *const MIDIPacketList },
+            unsafe { packet_list.as_ptr() },
             unsafe { packet_buf.storage.as_ptr::<MIDIPacketList>() },
         );
     }
@@ -623,7 +623,7 @@ mod tests {
         // allocate a buffer on the stack for building the list using native methods
         const BUFFER_SIZE: usize = 65536; // maximum allowed size
         let buffer: &mut [u8] = &mut [0; BUFFER_SIZE];
-        let pkt_list_ptr = buffer.as_mut_ptr() as *mut MIDIPacketList;
+        let pkt_list_ptr = buffer.as_mut_ptr().cast();
 
         // build the list
         let mut pkt_ptr = MIDIPacketListInit(pkt_list_ptr);
@@ -638,7 +638,7 @@ mod tests {
             );
             assert!(!pkt_ptr.is_null());
         }
-        let list_native = &*(pkt_list_ptr as *const _ as *const PacketList);
+        let list_native = &*(pkt_list_ptr.cast::<PacketList>());
 
         // build the PacketBuffer, containing the same packets
         let mut packet_buf = PacketBuffer::new(packets[0].0, &packets[0].1);
